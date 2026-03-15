@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reisplanning NYC & DC</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:#f5f7fa;color:#1a1a2e;padding:16px;}
+  h1{text-align:center;font-size:1.2em;margin-bottom:4px;}
+  .subtitle{text-align:center;font-size:.75em;color:#888;margin-bottom:20px;}
+
+  .phase{margin-bottom:24px;}
+  .phase-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;margin-bottom:12px;color:white;}
+  .phase-header h2{font-size:.95em;font-weight:800;}
+  .phase-header .phase-info{font-size:.75em;opacity:.85;margin-top:2px;}
+  .phase-nomad{background:linear-gradient(135deg,#1a4a8a,#2563c4);}
+  .phase-downtown{background:linear-gradient(135deg,#1a6b30,#2e9e4f);}
+  .phase-dc{background:linear-gradient(135deg,#7b1a2e,#b02040);}
+
+  .day-card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid #ddd;}
+  .day-card.nomad{border-left-color:#2563c4;}
+  .day-card.downtown{border-left-color:#2e9e4f;}
+  .day-card.dc{border-left-color:#b02040;}
+  .day-card.arrival{border-left-color:#888;}
+
+  .day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
+  .day-title{font-size:.95em;font-weight:800;color:#1a1a2e;}
+  .day-date{font-size:.72em;color:#888;}
+
+  .step-badge{display:flex;align-items:center;gap:6px;background:#f0f2f7;border-radius:20px;padding:4px 12px;}
+  .step-num{font-size:.85em;font-weight:800;}
+  .step-label{font-size:.68em;color:#888;}
+  .steps-low{color:#2e9e4f;}
+  .steps-mid{color:#e3a020;}
+  .steps-arr{color:#888;}
+
+  .timeline{position:relative;padding-left:20px;}
+  .timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:#e0e4ef;border-radius:1px;}
+
+  .tl-item{position:relative;margin-bottom:10px;}
+  .tl-item::before{content:'';position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:#2563c4;border:2px solid white;box-shadow:0 0 0 2px #dde1ec;}
+  .tl-item.rest::before{background:#e3a020;}
+  .tl-item.taxi::before{background:#8b949e;}
+  .tl-item.food::before{background:#e8411a;}
+  .tl-item.warn::before{background:#f85149;}
+
+  .tl-time{font-size:.68em;color:#aaa;font-weight:600;margin-bottom:1px;}
+  .tl-title{font-size:.8em;font-weight:700;color:#1a1a2e;}
+  .tl-detail{font-size:.72em;color:#666;line-height:1.45;margin-top:2px;}
+  .tl-steps{display:inline-block;font-size:.65em;background:#eef4ff;color:#2563c4;border-radius:10px;padding:1px 7px;margin-top:3px;font-weight:700;}
+  .tl-steps.taxi-badge{background:#f0f2f7;color:#666;}
+  .tl-steps.rest-badge{background:#fff8e0;color:#e3a020;}
+
+  .day-summary{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .sum-tag{font-size:.68em;padding:3px 10px;border-radius:20px;font-weight:600;}
+  .tag-steps{background:#eef4ff;color:#2563c4;}
+  .tag-taxi{background:#f0f2f7;color:#555;}
+  .tag-tip{background:#fff3cd;color:#856404;}
+
+  .tip-box{background:#fffdf0;border:1px solid #ffc107;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.74em;color:#856404;line-height:1.55;}
+  .tip-box strong{display:block;margin-bottom:3px;}
+  .warn-box{background:#fff0f0;border:1px solid #f85149;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.74em;color:#c0392b;line-height:1.55;}
+  .warn-box strong{display:block;margin-bottom:3px;}
+
+  .summary-table{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:16px;}
+  .summary-table h3{font-size:.8em;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#aaa;margin-bottom:12px;}
+  table{width:100%;border-collapse:collapse;font-size:.78em;}
+  th{background:#f5f7fa;padding:7px 10px;text-align:left;font-size:.72em;color:#666;font-weight:700;border-bottom:2px solid #e0e4ef;}
+  td{padding:7px 10px;border-bottom:1px solid #f0f2f7;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:1px 8px;border-radius:20px;font-size:.75em;font-weight:700;}
+  .green{background:#d4edda;color:#1a6b30;}
+  .orange{background:#fff3cd;color:#856404;}
+  .grey{background:#e9ecef;color:#555;}
+
+  .disclaimer{text-align:center;font-size:.68em;color:#bbb;margin-top:16px;padding:10px;background:white;border-radius:8px;}
+  @media(max-width:500px){.day-header{flex-direction:column;align-items:flex-start;}}
+</style>
+</head>
+<body>
+
+<h1>🗽 Reisplanning New York & Washington DC</h1>
+<p class="subtitle">30 april – 9 mei 2026 · Walking boot · Week 9–10 post-operatie · Aankomst 18u30 JFK · Vertrek 9 mei namiddag</p>
+
+<!-- Summary -->
+<div class="summary-table">
+  <h3>📊 Overzicht alle dagen</h3>
+  <table>
+    <thead><tr><th>Dag</th><th>Datum</th><th>Locatie</th><th>Stappen</th><th>Belasting</th></tr></thead>
+    <tbody>
+      <tr><td>Dag 1</td><td>Do 30 apr</td><td>✈️ Aankomst JFK — inchecken — rust</td><td>~500</td><td><span class="badge grey">Aankomst</span></td></tr>
+      <tr><td>Dag 2</td><td>Vr 1 mei</td><td>Midtown: Empire State, 5th Ave, Times Square</td><td>~3.800</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 3</td><td>Za 2 mei</td><td>⚾ Yankees vs. Orioles (13u35) + Chelsea Market ochtend</td><td>~3.200</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 4</td><td>Zo 3 mei</td><td>Brooklyn Bridge, DUMBO, hotelwissel downtown</td><td>~3.200</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 5</td><td>Ma 4 mei</td><td>9/11 Memorial, Battery Park, Staten Island Ferry</td><td>~2.800</td><td><span class="badge green">Licht</span></td></tr>
+      <tr><td>Dag 6</td><td>Di 5 mei</td><td>Wall Street, Oculus, Chinatown, Little Italy</td><td>~3.000</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 7</td><td>Wo 6 mei</td><td>Rustige ochtend NYC + Amtrak naar DC</td><td>~1.200</td><td><span class="badge green">Licht</span></td></tr>
+      <tr><td>Dag 8</td><td>Do 7 mei</td><td>National Mall: Lincoln, Vietnam, WWII, Capitol</td><td>~3.500</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 9</td><td>Vr 8 mei</td><td>Smithsonian, White House, Georgetown</td><td>~3.200</td><td><span class="badge orange">Matig</span></td></tr>
+      <tr><td>Dag 10</td><td>Za 9 mei</td><td>Ochtend vrij + namiddagvlucht naar huis</td><td>~1.500</td><td><span class="badge green">Licht</span></td></tr>
+      <tr style="font-weight:700;background:#f8f9fc;"><td colspan="3">Gemiddelde per dag (excl. aan/vertrek)</td><td>~2.970</td><td><span class="badge green">Haalbaar</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FASE 1: NOMAD -->
+<div class="phase">
+  <div class="phase-header phase-nomad">
+    <div>
+      <h2>🏨 Hotel 1 — INNSiDE by Meliá NoMad</h2>
+      <div class="phase-info">132 W 27th St, Chelsea · 30 april – 3 mei · Week 9 post-operatie</div>
+    </div>
+  </div>
+
+  <!-- Dag 1 -->
+  <div class="day-card arrival">
+    <div class="day-header">
+      <div><div class="day-title">Dag 1 — Aankomst & inchecken</div><div class="day-date">Donderdag 30 april</div></div>
+      <div class="step-badge"><span class="step-num steps-arr">~500</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item warn"><div class="tl-time">18u30</div><div class="tl-title">Aankomst JFK — donderdagavond spitsuur</div><div class="tl-detail">Donderdagavond tussen 18u-20u is het ergste spitsuur van de week op de Van Wyck Expressway richting Manhattan. Reken op 75 tot 90 minuten rijden naar het hotel.</div></div>
+      <div class="tl-item taxi"><div class="tl-time">18u45</div><div class="tl-title">Gele taxi nemen aan de taxistand</div><div class="tl-detail">Vaste prijs $70 flat fare naar Manhattan + tolls + $5 spitsuurkost + tip = ~$90-100 totaal. Geen Uber — tijdens spitsuur op JFK kan de wachttijd voor Uber lang zijn. Gele taxi heeft vaste rij en vaste prijs.</div><span class="tl-steps taxi-badge">Taxi ~$95 incl. tip</span></div>
+      <div class="tl-item"><div class="tl-time">~20u15</div><div class="tl-title">Aankomst hotel — inchecken</div><div class="tl-detail">Na een lange vlucht en taxirit: direct inchecken, douche, voet omhoog.</div><span class="tl-steps">~300 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">~21u00</div><div class="tl-title">Diner in of vlakbij hotel</div><div class="tl-detail">Hotel heeft restaurant The Wilson op de begane grond — ideaal voor de eerste avond. Geen energie verspillen aan zoeken. Vroeg naar bed na de tijdsverschil.</div><span class="tl-steps">~200 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~500 stappen</span>
+      <span class="sum-tag tag-taxi">Taxi JFK → hotel (~$95)</span>
+    </div>
+    <div class="warn-box"><strong>⚠️ Spitsuur JFK donderdagavond</strong>18u30 aankomst op JFK op een donderdag is het zwaarste spitsuurmoment van de week. Budget ruim 90 min voor de taxirit. Geen plannen voor dag 1 — direct naar het hotel.</div>
+  </div>
+
+  <!-- Dag 2 -->
+  <div class="day-card nomad">
+    <div class="day-header">
+      <div><div class="day-title">Dag 2 — Midtown: Empire State, 5th Avenue, Times Square</div><div class="day-date">Vrijdag 1 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.800</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item rest"><div class="tl-time">9u00</div><div class="tl-title">Rustig ontbijt — geen haast</div><div class="tl-detail">Eerste volledige dag. Jet lag kan nog spelen — laat het lichaam wennen. Niet voor 9u30 vertrekken.</div></div>
+      <div class="tl-item taxi"><div class="tl-time">10u00</div><div class="tl-title">Taxi naar Empire State Building</div><div class="tl-detail">10 min rijden. Tickets vooraf online boeken — vermijdt wachtrijen en je staat minder lang.</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item"><div class="tl-time">10u15–12u00</div><div class="tl-title">Empire State Building</div><div class="tl-detail">Volledig per lift. Bovenaan afwisselen tussen kijken en zitten. Spectaculair uitzicht over Manhattan.</div><span class="tl-steps">~800 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">12u00–13u00</div><div class="tl-title">Lunch — 5th Avenue buurt</div><div class="tl-detail">Ruim de tijd voor lunch. Minstens 45 min zitten als rustpauze.</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item"><div class="tl-time">13u00–14u30</div><div class="tl-title">5th Avenue & Bryant Park</div><div class="tl-detail">Van 34th naar 42nd Street: Macy's, Bryant Park, New York Public Library (gratis, prachtig interieur, veel zitplaatsen). Vlakke trottoirs, ontspannen tempo.</div><span class="tl-steps">~1.500 stappen</span></div>
+      <div class="tl-item rest"><div class="tl-time">14u30–15u15</div><div class="tl-title">Bryant Park — verplichte rust</div><div class="tl-detail">Veel stoelen en tafeltjes. Voet omhoog, koffie of frisdrank. Minimum 30 min rust voor de namiddag.</div><span class="tl-steps rest-badge">Rust 30 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">15u15</div><div class="tl-title">Taxi naar Times Square</div><span class="tl-steps taxi-badge">Taxi ~$10</span></div>
+      <div class="tl-item"><div class="tl-time">15u30–16u30</div><div class="tl-title">Times Square beleving</div><div class="tl-detail">Vrijdagnamiddag is drukker dan doordeweeks. Pas extra op voor mensenmassa's die tegen de boot kunnen stoten. Houd je aan de rand van het plein.</div><span class="tl-steps">~900 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">16u30</div><div class="tl-title">Taxi terug hotel</div><span class="tl-steps taxi-badge">Taxi ~$15</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Avonddiner Chelsea/NoMad</div><span class="tl-steps">~600 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.800 stappen</span>
+      <span class="sum-tag tag-taxi">4 taxiritten (~$50)</span>
+      <span class="sum-tag tag-tip">💡 Empire State: tickets vooraf online boeken</span>
+    </div>
+  </div>
+
+  <!-- Dag 3 -->
+  <div class="day-card nomad" style="border-left-color:#e8411a;">
+    <div class="day-header">
+      <div><div class="day-title">⚾ Dag 3 — Yankees vs. Baltimore Orioles + Chelsea Market ochtend</div><div class="day-date">Zaterdag 2 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.200</span><span class="step-label">stappen</span></div>
+    </div>
+
+    <!-- Game info banner -->
+    <div style="background:linear-gradient(135deg,#003087,#1a3a8a);color:white;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-size:.72em;opacity:.8;margin-bottom:4px;">⚾ YANKEE STADIUM — THE BRONX</div>
+      <div style="font-size:1em;font-weight:800;">New York Yankees vs. Baltimore Orioles</div>
+      <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
+        <div style="font-size:.75em;opacity:.9;">🕑 Start: <strong>13u35</strong></div>
+        <div style="font-size:.75em;opacity:.9;">📅 Zaterdag 2 mei 2026</div>
+        <div style="font-size:.75em;opacity:.9;">🏟️ Yankee Stadium, Bronx</div>
+        <div style="font-size:.75em;opacity:.9;">🎟️ Tickets v.a. $39 (Grandstand)</div>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">9u30–11u00</div><div class="tl-title">Chelsea Market (ochtend)</div><div class="tl-detail">15 min stappen of 5 min taxi. Overdekte markthal voor een rustige zaterdagochtend. Ontbijt of koffie hier. Geen haast — je hebt nog 2,5u voor vertrek naar het stadion.</div><span class="tl-steps">~700 stappen</span></div>
+      <div class="tl-item rest"><div class="tl-time">11u00–11u45</div><div class="tl-title">Rust hotel — voet omhoog voor het stadion</div><div class="tl-detail">Een baseballwedstrijd duurt gemiddeld 3 uur. Je staat en wandelt in het stadion. Verplichte rustpauze voor vertrek.</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">11u45</div><div class="tl-title">Taxi naar Yankee Stadium — The Bronx</div><div class="tl-detail">~35 min rijden vanuit Midtown/Chelsea. Zaterdag = vlot verkeer. Reken $35-45 incl. tip. Vroeg gaan: stadion opent 2u voor aanvang = 11u35. Vroeg aankomst = minder stappen bij inchecken.</div><span class="tl-steps taxi-badge">Taxi ~$40</span></div>
+      <div class="tl-item"><div class="tl-time">12u15–12u45</div><div class="tl-title">Yankee Stadium aankomst & inchecken</div><div class="tl-detail">Gebruik Gate 2 of Gate 6 — dichtstbij de liften voor gasten met beperkte mobiliteit. Vraag bij ingang om een "ambulatory accessible aisle seat" als je dat nog niet geboekt hebt. Lift nemen naar jouw niveau — geen trappen nodig.</div><span class="tl-steps">~400 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">12u45–13u35</div><div class="tl-title">Stadion verkennen + hotdog voor de wedstrijd</div><div class="tl-detail">Great Hall (begane grond) is spectaculair. Yankees Museum is gratis en de moeite waard. Monument Park (bereikbaar via lift bij Gate 8) toont de legendarische gesigneerde zuilen van Ruth, Gehrig, DiMaggio. Yankees hotdog en bier zijn verplicht.</div><span class="tl-steps">~500 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">13u35–16u30</div><div class="tl-title">⚾ Yankees vs. Orioles — spel volgen!</div><div class="tl-detail">Gemiddelde speelduur ~3u. Je zit de meeste tijd. Sta niet bij elke pitch op — de boot heeft rust nodig. Gebruik de lift voor toiletbezoek. Grandstand Infield (sectie 300) biedt goed zicht en is goed bereikbaar.</div><span class="tl-steps">~600 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">~16u30–17u00</div><div class="tl-title">Taxi terug hotel na de wedstrijd</div><div class="tl-detail">Na de wedstrijd is het druk rond het stadion. Loop iets verder van de hoofduitgang voor een snellere Uber. Verwacht 40-50 min rijden terug naar Midtown na een zaterdagwedstrijd.</div><span class="tl-steps taxi-badge">Taxi ~$45</span></div>
+      <div class="tl-item rest"><div class="tl-time">17u00–19u00</div><div class="tl-title">Rust hotel — voet omhoog</div><div class="tl-detail">Na 3u stadion heeft de voet rust nodig. Minstens 90 min rust voor het avondeten.</div><span class="tl-steps rest-badge">Rust 90 min</span></div>
+      <div class="tl-item food"><div class="tl-time">19u30</div><div class="tl-title">Avonddiner — laatste avond hotel 1</div><div class="tl-detail">Morgen hotelwissel naar Downtown. Koffers alvast klaar zetten. Kies restaurant op max 5 min stappen van het hotel.</div><span class="tl-steps">~500 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.200 stappen</span>
+      <span class="sum-tag tag-taxi">3 taxiritten (~$90)</span>
+      <span class="sum-tag tag-tip">⚾ Tickets: yankees.com of StubHub — koop nu!</span>
+    </div>
+    <div style="background:#eef4ff;border:1px solid #2563c4;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.74em;color:#1a4a8a;line-height:1.55;">
+      <strong style="display:block;margin-bottom:4px;">♿ Toegankelijkheid Yankee Stadium met walking boot</strong>
+      • <strong>Gates 2, 6 of 8</strong> zijn het meest geschikt — dichtstbij liften<br>
+      • <strong>16 publieke liften</strong> beschikbaar — geen trappen nodig naar geen enkel niveau<br>
+      • Koop tickets in <strong>sectie 300-level (Grandstand Infield)</strong> — lift toegankelijk, goed zicht, dicht bij toiletten en eten<br>
+      • Zeg aan de steward dat je een walking boot hebt — ze helpen je naar een aisle seat<br>
+      • Contact: <strong>disabledservices@yankees.com</strong> of 718.579.4510 voor specifieke vragen
+    </div>
+    <div class="tip-box" style="margin-top:8px;"><strong>🎟️ Tickets kopen — doe dit nu</strong>Koop tickets via <strong>yankees.com</strong> (officieel) of <strong>StubHub / SeatGeek</strong>. Zaterdag vs. Orioles is een populaire wedstrijd. Kies sectie 305, 306, 309 of 310 op het Grandstand niveau — lifttoegankelijk, goede zichthoek, dicht bij de faciliteiten. Prijs: $39–80 per persoon op dit niveau.</div>
+  </div>
+</div>
+
+<!-- FASE 2: DOWNTOWN -->
+<div class="phase">
+  <div class="phase-header phase-downtown">
+    <div>
+      <h2>🏨 Hotel 2 — Cloud One Downtown (WTC)</h2>
+      <div class="phase-info">133 Greenwich St, Financial District · 3–6 mei · Week 9–10 post-operatie</div>
+    </div>
+  </div>
+
+  <!-- Dag 4 -->
+  <div class="day-card downtown">
+    <div class="day-header">
+      <div><div class="day-title">Dag 4 — Brooklyn Bridge, DUMBO, hotelwissel</div><div class="day-date">Zondag 3 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.200</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">9u00</div><div class="tl-title">Uitchecken hotel 1 — bagage bewaren</div><div class="tl-detail">Vraag het hotel de bagage te bewaren tot 's middags. Zo hoef je niet met koffers naar de brug.</div></div>
+      <div class="tl-item taxi"><div class="tl-time">9u30</div><div class="tl-title">Taxi naar Brooklyn Bridge voetgangersopgang</div><div class="tl-detail">Manhattan-kant, Centre Street ingang. Zondag = rustig verkeer, snelle rit.</div><span class="tl-steps taxi-badge">Taxi ~$22</span></div>
+      <div class="tl-item"><div class="tl-time">10u00–11u15</div><div class="tl-title">Brooklyn Bridge oversteken</div><div class="tl-detail">1,3 km, rustig tempo. Halverwege stoppen en rusten op een bankje. Uitzicht op de skyline is indrukwekkend. Zondag = minder fietsers dan doordeweeks.</div><span class="tl-steps">~1.700 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">11u15–12u30</div><div class="tl-title">DUMBO — lunch met zicht op Manhattan</div><div class="tl-detail">Populaire buurt met restaurants en cafés onder de brug. Iconische fotoplek. Minstens 45 min rust na de oversteek.</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">12u30</div><div class="tl-title">Taxi naar Hotel 2 (Cloud One Downtown)</div><div class="tl-detail">Inchecken, bagage kwijt, even uitrusten voor de namiddag.</div><span class="tl-steps taxi-badge">Taxi ~$18</span></div>
+      <div class="tl-item"><div class="tl-time">15u00–16u30</div><div class="tl-title">One World Trade Center — buitenkant verkennen</div><div class="tl-detail">Hotel staat letterlijk naast het WTC. 5 min stappen. Indrukwekkend complex.</div><span class="tl-steps">~700 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Diner Financial District</div><span class="tl-steps">~400 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.200 stappen</span>
+      <span class="sum-tag tag-taxi">3 taxiritten (~$45)</span>
+      <span class="sum-tag tag-tip">💡 Zondag = rustigste dag voor Brooklyn Bridge</span>
+    </div>
+  </div>
+
+  <!-- Dag 5 -->
+  <div class="day-card downtown">
+    <div class="day-header">
+      <div><div class="day-title">Dag 5 — 9/11 Memorial, Battery Park, Staten Island Ferry</div><div class="day-date">Maandag 4 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-low">~2.800</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">9u30</div><div class="tl-title">9/11 Memorial (te voet vanuit hotel)</div><div class="tl-detail">Slechts 5 min stappen. Vlak terrein, ruime paden. De twee bassins zijn indrukwekkend. Maandag = rustig, weinig toeristen.</div><span class="tl-steps">~700 stappen</span></div>
+      <div class="tl-item rest"><div class="tl-time">11u00–11u30</div><div class="tl-title">Rust bij het memorial</div><div class="tl-detail">Koffie in een van de nabijgelegen cafés. Voet omhoog.</div><span class="tl-steps rest-badge">Rust 30 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">11u30</div><div class="tl-title">Taxi naar Staten Island Ferry terminal</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item"><div class="tl-time">12u00–13u30</div><div class="tl-title">Staten Island Ferry — heen en terug (gratis!)</div><div class="tl-detail">25 min heen, 25 min terug. Je zit de hele tijd. Vrijheidsbeeld en skyline zijn prachtig vanuit het water. Geen uitstap nodig op Staten Island — gewoon heen en terug.</div><span class="tl-steps">~300 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">13u30–14u30</div><div class="tl-title">Lunch Bowling Green / Battery Park</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item"><div class="tl-time">14u30–15u30</div><div class="tl-title">Battery Park & Charging Bull</div><div class="tl-detail">Vlak park langs het water. De beroemde Charging Bull stier is 5 min stappen van Battery Park.</div><span class="tl-steps">~1.000 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">15u30</div><div class="tl-title">Taxi terug hotel</div><span class="tl-steps taxi-badge">Taxi ~$10</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Avonddiner</div><span class="tl-steps">~400 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~2.800 stappen</span>
+      <span class="sum-tag tag-taxi">3 taxiritten (~$35)</span>
+      <span class="sum-tag tag-tip">💡 Lichtste dag van NYC — goede rustdag midweek</span>
+    </div>
+  </div>
+
+  <!-- Dag 6 -->
+  <div class="day-card downtown">
+    <div class="day-header">
+      <div><div class="day-title">Dag 6 — Wall Street, Oculus, Chinatown, Little Italy</div><div class="day-date">Dinsdag 5 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.000</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">10u00</div><div class="tl-title">Wall Street & NYSE (te voet vanuit hotel)</div><div class="tl-detail">5 min stappen. Federal Hall, NYSE gebouw, Trinity Church. Dinsdag = druk op Wall Street maar goed begaanbaar.</div><span class="tl-steps">~600 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">11u00–12u00</div><div class="tl-title">Oculus — Westfield World Trade Center</div><div class="tl-detail">Spectaculaire witte architectuur van Santiago Calatrava. Gratis toegang. Vlakke vloeren, airco, veel zitmogelijkheden. Absoluut bezoeken.</div><span class="tl-steps">~700 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">12u00</div><div class="tl-title">Taxi naar Chinatown</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item food"><div class="tl-time">12u15–13u30</div><div class="tl-title">Lunch in Chinatown</div><div class="tl-detail">Authentieke dim sum of noedelsoep aan Canal Street. Goedkoop en heerlijk. 45 min zitten.</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item"><div class="tl-time">13u30–14u30</div><div class="tl-title">Little Italy — Mulberry Street</div><div class="tl-detail">Kompact straatje met Italiaanse sfeer. Gelato, espresso, delicatessenwinkels. 3-4 blokken wandelen.</div><span class="tl-steps">~1.000 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">14u30</div><div class="tl-title">Taxi terug hotel</div><span class="tl-steps taxi-badge">Taxi ~$14</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Laatste avond NYC — speciaal diner</div><div class="tl-detail">Financial District heeft uitstekende restaurants. Morgen trein naar DC — koffers alvast inpakken.</div><span class="tl-steps">~500 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.000 stappen</span>
+      <span class="sum-tag tag-taxi">3 taxiritten (~$40)</span>
+      <span class="sum-tag tag-tip">💡 Oculus: gratis, vlak, verplicht te bezoeken</span>
+    </div>
+  </div>
+</div>
+
+<!-- FASE 3: DC -->
+<div class="phase">
+  <div class="phase-header phase-dc">
+    <div>
+      <h2>🏛️ Hotel 3 — Beacon Hotel, Dupont Circle DC</h2>
+      <div class="phase-info">1615 Rhode Island Ave NW · 6–9 mei · Week 10 post-operatie</div>
+    </div>
+  </div>
+
+  <!-- Dag 7 -->
+  <div class="day-card dc">
+    <div class="day-header">
+      <div><div class="day-title">Dag 7 — Amtrak NYC → Washington DC + Dupont Circle</div><div class="day-date">Woensdag 6 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-low">~1.200</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">Ochtend</div><div class="tl-title">Uitchecken Cloud One Downtown</div></div>
+      <div class="tl-item taxi"><div class="tl-time">9u00</div><div class="tl-title">Taxi naar Penn Station / Moynihan Train Hall</div><div class="tl-detail">15 min rijden. Geen metro met bagage en walking boot.</div><span class="tl-steps taxi-badge">Taxi ~$20</span></div>
+      <div class="tl-item"><div class="tl-time">10u00–13u00</div><div class="tl-title">🚂 Amtrak Northeast Regional — NYC naar DC</div><div class="tl-detail">Sterk aanbevolen boven vliegen: comfortabel zitten, geen schoenen uit, geen lange luchthavenwachtrijen. Aankomst rechtstreeks in Union Station Washington DC. Boek vensterplaats voor mooi uitzicht. ~3 uur.</div><span class="tl-steps">~300 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">13u00</div><div class="tl-title">Taxi Union Station → Beacon Hotel Dupont Circle</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item food"><div class="tl-time">13u30–15u00</div><div class="tl-title">Inchecken + lunch + rust</div><span class="tl-steps">~300 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">15u30–17u00</div><div class="tl-title">Dupont Circle park</div><div class="tl-detail">5 min stappen van het hotel. Gezellig stadspark met fontein, terrasjes en boekwinkels. Rustige kennismaking met DC.</div><span class="tl-steps">~400 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Diner Dupont Circle</div><div class="tl-detail">Beste restaurantbuurt van DC, alles op wandelafstand van het hotel.</div><span class="tl-steps">~200 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~1.200 stappen</span>
+      <span class="sum-tag tag-tip">🚂 Amtrak: boek vooraf op amtrak.com (~$50-80)</span>
+    </div>
+    <div class="tip-box"><strong>💡 Amtrak vs. vliegtuig NYC–DC</strong>De trein duurt 3u maar is met een walking boot veel comfortabeler dan vliegen: geen lange sta-rijen, geen schoenen uit bij security, directe aankomst in het centrum. Boek Northeast Regional vooraf — Acela Express is sneller maar 2-3× duurder.</div>
+  </div>
+
+  <!-- Dag 8 -->
+  <div class="day-card dc">
+    <div class="day-header">
+      <div><div class="day-title">Dag 8 — National Mall: Monumenten & Capitol</div><div class="day-date">Donderdag 7 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.500</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item taxi"><div class="tl-time">9u00</div><div class="tl-title">Taxi naar Lincoln Memorial</div><div class="tl-detail">20 min rijden. Altijd starten aan de westkant — zo wandel je met de wind mee richting Capitol.</div><span class="tl-steps taxi-badge">Taxi ~$18</span></div>
+      <div class="tl-item"><div class="tl-time">9u15–10u00</div><div class="tl-title">Lincoln Memorial</div><div class="tl-detail">Treden rustig nemen. Bovenaan: uitzicht over de Reflecting Pool richting Washington Monument. Eén van de mooiste uitzichten van Amerika.</div><span class="tl-steps">~500 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">10u00–10u30</div><div class="tl-title">Vietnam Veterans Memorial (300m)</div><div class="tl-detail">Vlak pad langs de zwarte granieten muur met 58.000 namen. Emotioneel en indrukwekkend.</div><span class="tl-steps">~400 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">10u30–11u15</div><div class="tl-title">WWII Memorial & Washington Monument buitenkant</div><div class="tl-detail">600m verder langs de Mall. WWII Memorial is vlak en goed toegankelijk. Washington Monument: indrukwekkende obelisk.</div><span class="tl-steps">~900 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">11u15–12u30</div><div class="tl-title">Rust + lunch op de National Mall</div><div class="tl-detail">Smithsonian Visitor Center (het kasteel) heeft een café en zitplaatsen. Minstens 60 min rust na de ochtendwandeling.</div><span class="tl-steps rest-badge">Rust 60 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">12u30</div><div class="tl-title">Taxi naar Capitol Building</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item"><div class="tl-time">13u00–14u30</div><div class="tl-title">US Capitol + Visitor Center</div><div class="tl-detail">Ondergronds Visitor Center is gratis en volledig toegankelijk. Vlakke vloeren, uitleg over de geschiedenis. Buitenkant is indrukwekkend vanuit het Capitol Reflecting Pool perspectief.</div><span class="tl-steps">~1.000 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">14u30</div><div class="tl-title">Taxi terug hotel — rust</div><span class="tl-steps taxi-badge">Taxi ~$18</span></div>
+      <div class="tl-item food"><div class="tl-time">19u00</div><div class="tl-title">Diner Dupont Circle</div><span class="tl-steps">~400 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.500 stappen</span>
+      <span class="sum-tag tag-taxi">4 taxiritten (~$55)</span>
+      <span class="sum-tag tag-tip">💡 DC Mall is veel vlakker dan NYC — aangenamer met boot</span>
+    </div>
+  </div>
+
+  <!-- Dag 9 -->
+  <div class="day-card dc">
+    <div class="day-header">
+      <div><div class="day-title">Dag 9 — Smithsonian, White House, Georgetown</div><div class="day-date">Vrijdag 8 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-mid">~3.200</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item taxi"><div class="tl-time">9u30</div><div class="tl-title">Taxi naar Smithsonian National Air & Space Museum</div><span class="tl-steps taxi-badge">Taxi ~$15</span></div>
+      <div class="tl-item"><div class="tl-time">10u00–12u00</div><div class="tl-title">Air & Space Museum (gratis)</div><div class="tl-detail">Maanstenen, Space Shuttle, Wright Brothers vliegtuig. Grote ruimtes, vlakke vloeren, veel zitmogelijkheden. Eén van de meest bezochte musea ter wereld.</div><span class="tl-steps">~1.200 stappen</span></div>
+      <div class="tl-item food"><div class="tl-time">12u00–13u00</div><div class="tl-title">Lunch museum of op de Mall</div><span class="tl-steps rest-badge">Rust 45 min</span></div>
+      <div class="tl-item taxi"><div class="tl-time">13u00</div><div class="tl-title">Taxi naar White House / Lafayette Square</div><span class="tl-steps taxi-badge">Taxi ~$10</span></div>
+      <div class="tl-item"><div class="tl-time">13u15–14u00</div><div class="tl-title">White House buitenkant + Lafayette Square</div><div class="tl-detail">Rustig park voor het Witte Huis met bankjes. Goede fotoplek. Compact wandelgebied van 10 min.</div><span class="tl-steps">~700 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">14u00</div><div class="tl-title">Taxi naar Georgetown</div><span class="tl-steps taxi-badge">Taxi ~$12</span></div>
+      <div class="tl-item"><div class="tl-time">14u15–16u00</div><div class="tl-title">Georgetown — M Street wandeling</div><div class="tl-detail">Historische buurt met bakstenen gebouwen. Beperk je tot M Street (4-5 blokken). Zoek daarna een terras voor een drankje — laatste avond DC.</div><span class="tl-steps">~1.000 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">16u00</div><div class="tl-title">Taxi terug hotel</div><span class="tl-steps taxi-badge">Taxi ~$14</span></div>
+      <div class="tl-item food"><div class="tl-time">19u30</div><div class="tl-title">Laatste avond — speciaal diner Dupont Circle</div><span class="tl-steps">~400 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~3.200 stappen</span>
+      <span class="sum-tag tag-taxi">4 taxiritten (~$50)</span>
+      <span class="sum-tag tag-tip">💡 Smithsonian is gratis — geen tijdsdrum nodig</span>
+    </div>
+  </div>
+
+  <!-- Dag 10 -->
+  <div class="day-card dc">
+    <div class="day-header">
+      <div><div class="day-title">Dag 10 — Ochtend vrij + namiddagvlucht</div><div class="day-date">Zaterdag 9 mei</div></div>
+      <div class="step-badge"><span class="step-num steps-low">~1.500</span><span class="step-label">stappen</span></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-time">9u00–11u00</div><div class="tl-title">Rustig ontbijt + ochtendwandeling Dupont Circle</div><div class="tl-detail">Je hebt nog een halve dag! Dupont Circle buurt heeft zondagmarkten en leuke koffiezaken. Niet te ver gaan — vlucht staat op het programma.</div><span class="tl-steps">~800 stappen</span></div>
+      <div class="tl-item"><div class="tl-time">11u00–12u00</div><div class="tl-title">Uitchecken + bagage klaarmaken</div></div>
+      <div class="tl-item food"><div class="tl-time">12u00</div><div class="tl-title">Laatste lunch DC</div><div class="tl-detail">Een laatste maaltijd in Dupont Circle voor het vertrek.</div><span class="tl-steps">~400 stappen</span></div>
+      <div class="tl-item taxi"><div class="tl-time">~13u30</div><div class="tl-title">Taxi naar Reagan National Airport (DCA)</div><div class="tl-detail">Reagan is het dichtstbijzijnde vliegveld — 12 min rijden van het hotel. Veel beter dan Dulles (40+ min). Neem ruim de tijd: met boot is luchthaven iets trager doorlopen.</div><span class="tl-steps taxi-badge">Taxi ~$25</span></div>
+      <div class="tl-item rest"><div class="tl-time">Luchthaven</div><div class="tl-title">Vraag een rolstoel of elektrische buggy aan</div><div class="tl-detail">Na 10 dagen stappen is de voet vermoeid. Luchtvaartmaatschappijen zijn verplicht dit te voorzien bij medische aanvraag — dit kost niets extra en spaart energie voor de thuisreis.</div><span class="tl-steps">~300 stappen</span></div>
+    </div>
+    <div class="day-summary">
+      <span class="sum-tag tag-steps">~1.500 stappen</span>
+      <span class="sum-tag tag-tip">💡 Reagan Airport (DCA) = veel dichter dan Dulles</span>
+    </div>
+  </div>
+</div>
+
+<!-- Tips -->
+<div style="background:white;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+  <div style="font-size:.8em;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#aaa;margin-bottom:12px;">⚠️ Essentiële tips voor de walking boot</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.78em;">
+    <div style="background:#fff3cd;border-radius:8px;padding:10px;"><strong>🔋 Dagelijkse rust (verplicht)</strong><br>2× per dag 30-45 min met de voet omhoog. Plan dit in na elke ochtend- en middagactiviteit. Niet onderhandelen over deze pauzes.</div>
+    <div style="background:#d0e8ff;border-radius:8px;padding:10px;"><strong>📱 Uber + Lyft beide installeren</strong><br>Vergelijk altijd de prijs. In NYC ook de Via-app. Vermijd de metro volledig — te veel trappen en gedrang met de boot.</div>
+    <div style="background:#d4edda;border-radius:8px;padding:10px;"><strong>🚌 Hop-on Hop-off backup</strong><br>Als de voet tegenvalt op een dag: dagpas HOHO-bus kopen. Je zit, je ziet alles, je stapt uit waar je wil. Ideale back-up plan.</div>
+    <div style="background:#f8d7da;border-radius:8px;padding:10px;"><strong>🌡️ Zwelling monitoren</strong><br>Als de voet 's avonds significant meer gezwollen is dan 's ochtends: volgende dag 30-40% minder stappen plannen. Luister naar je lichaam.</div>
+    <div style="background:#fff3cd;border-radius:8px;padding:10px;"><strong>🧦 Compressiekousen</strong><br>Op beide vluchten EN op drukke wandeldagen. Vermindert zwelling en vermoeidheid significant.</div>
+    <div style="background:#d0e8ff;border-radius:8px;padding:10px;"><strong>👟 Boot instelling</strong><br>Vraag kinesist de boot optimaal af te stellen voor wandelen vóór vertrek op 30/03. Een goed afgestelde boot = minder vermoeidheid.</div>
+  </div>
+</div>
+
+<div class="disclaimer">⚠️ Planning op basis van geschatte herstelfase week 9-10 post-operatie. Definitief groen licht vereist van je chirurg op 30 maart. Luister altijd naar je lichaam — stop activiteiten als de voet pijn geeft.</div>
+</body>
+</html>
